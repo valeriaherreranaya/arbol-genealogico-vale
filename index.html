@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>Árbol Familiar – Valeria Herrera Anaya</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#fdf6f0; font-family:'Segoe UI',system-ui,sans-serif; }
+  h1 { text-align:center; font-size:1.25rem; color:#5a3040; padding:16px 0 6px; }
+  .legend {
+    display:flex; justify-content:center; gap:18px; flex-wrap:wrap;
+    font-size:0.72rem; color:#666; margin-bottom:10px; padding:0 20px;
+  }
+  .legend-item { display:flex; align-items:center; gap:5px; }
+  .legend-dot { width:14px; height:14px; border-radius:3px; border:2px solid transparent; flex-shrink:0; }
+  #tree-container { overflow:auto; width:100%; cursor:grab; }
+  #tree-container:active { cursor:grabbing; }
+  svg { display:block; }
+</style>
+</head>
+<body>
+<h1>🌸 Árbol Familiar — Valeria Herrera Anaya</h1>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#fce4ec;border-color:#e57fa0"></div>Mujer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e3f2fd;border-color:#7ab3d8"></div>Hombre</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f0d0dd;border-color:#c9a0b4;opacity:0.7"></div>Fallecida</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d8e8f5;border-color:#a3bdd4;opacity:0.7"></div>Fallecido</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#efefef;border-color:#bbb;opacity:0.65"></div>Desconocida/o</div>
+  <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#f48fb1,#f06292);border-color:#c2185b"></div>Tú ✨</div>
+  <div class="legend-item">
+    <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#c8a0b8" stroke-width="1.8"/></svg>Descendencia
+  </div>
+  <div class="legend-item">
+    <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#c8a0b8" stroke-width="1.8" stroke-dasharray="4,3"/></svg>Pareja
+  </div>
+</div>
+<div id="tree-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+// ── LAYOUT CONFIG ─────────────────────────────────────────────────
+const NW = 126, NH = 54, NR = 9;   // node width / height / corner radius
+const HGAP = 14;                    // horizontal gap between sibling nodes
+
+// Row Y-centers — generous spacing so labels never overlap nodes
+const Y = {
+  bisabuelos:   80,
+  tiosAbuelos: 210,
+  abuelos:     340,
+  padres:      470,
+  matthias:    560,   // primo, one row below tías
+  hijos:       650,
+};
+
+// ── NODE DATA ─────────────────────────────────────────────────────
+const nodes = {
+  // BISABUELOS
+  mariaSerna:      { name:'Maria Serna',               role:'Bisabuela',                 sex:'f', deceased:true },
+  marcoTulio:      { name:'Marco Tulio\nArbeláez',     role:'Bisabuelo †',               sex:'m', deceased:true },
+  gracielaGaleano: { name:'Graciela Galeano\nDe la Cruz Nieto', role:'Bisabuela †',      sex:'f', deceased:true },
+
+  // TÍOS ABUELOS
+  joseTulio:       { name:'José Tulio\nArbeláez',       role:'Tío Abuelo †\n(Medioherm.)',sex:'m', deceased:true },
+  mariaJosefa:     { name:'Maria Josefa\nArbeláez',     role:'Tía Abuela\n(Mediohermana)',sex:'f' },
+  aurora:          { name:'Aurora Arbeláez\nKüger',     role:'Tía Abuela\n(Mediohermana)',sex:'f' },
+  francined:       { name:'Francined\nPerdomo Galeano', role:'Tío Abuelo †\n(Medioherm.)',sex:'m', deceased:true },
+  gracielaChela:   { name:'Graciela (Chela)\nArbeláez Gal.', role:'Tía Abuela',          sex:'f' },
+  amparo:          { name:'Amparo\nArbeláez Gal.',      role:'Tía Abuela',               sex:'f' },
+  efrain:          { name:'Efraín\nArbeláez Gal.',      role:'Tío Abuelo',               sex:'m' },
+  fanny:           { name:'Fanny\nArbeláez Gal.',       role:'Tía Abuela',               sex:'f' },
+  anaTulia:        { name:'Ana Tulia\nArbeláez Gal.',   role:'Tía Abuela',               sex:'f' },
+
+  // ABUELOS
+  desconocida:     { name:'???',                        role:'Desconocida',              sex:'?' },
+  libia:           { name:'Libia Margarita\nZuleta Q',  role:'Abuela Paterna †',         sex:'f', deceased:true },
+  pedroSerna:      { name:'Pedro Serna',                role:'Abuelo (Abuelastro)',       sex:'m' },
+  mariaElena:      { name:'Maria Elena\nArbeláez Galeano', role:'Abuela materna',        sex:'f' },
+
+  // TÍOS PATERNOS
+  alex:            { name:'Alex Quintero\nZuleta',      role:'Tío Paterno',              sex:'m' },
+  yolima:          { name:'Yolima Quintero\nZuleta',    role:'Tía Paterna',              sex:'f' },
+  juanCamilo:      { name:'Juan Camilo\nQuintero Zuleta',role:'Tío Paterno',             sex:'m' },
+
+  // TÍOS MATERNOS
+  mabelCristina:   { name:'Mabel Cristina\nSerna Arbeláez', role:'Tía Materna',         sex:'f' },
+  katherine:       { name:'Katherine\nArbeláez Galeano', role:'Tía Materna',            sex:'f' },
+  matthias:        { name:'Matthias\nArbeláez Galeano', role:'Primo',                   sex:'m' },
+
+  // PADRES
+  otraPareja:      { name:'???',                        role:'Otra pareja\nde papá',     sex:'?' },
+  mauricio:        { name:'Mauricio A.\nHerrera Zuleta',role:'Papá',                    sex:'m' },
+  sandra:          { name:'Sandra Milena\nAnaya Arbeláez',role:'Mamá',                  sex:'f' },
+  omar:            { name:'Omar Ospina\nOspina',         role:'Padrastro',              sex:'m' },
+
+  // HIJOS
+  alejandro:       { name:'Alejandro\nHerrera Loaiza',  role:'Medio Hermano',           sex:'m' },
+  vanessa:         { name:'Vanessa\nHerrera Hincapie',  role:'Medio Hermana',           sex:'f' },
+  valeria:         { name:'Valeria\nHerrera Anaya',     role:'',                        sex:'f', you:true },
+};
+
+// ── POSITIONS ─────────────────────────────────────────────────────
+// We place nodes by hand on a wide canvas.
+// Center column anchor:
+const MX = 820;
+
+// --- BISABUELOS: marcoTulio is the linking ancestor ---
+//   mariaSerna (left), marcoTulio (center-ish), gracielaGaleano (right)
+//   mariaSerna connects down to pedroSerna; marcoTulio+gracielaGaleano connect down to mariaElena & tíos abuelos
+pos('mariaSerna',      MX - 310, Y.bisabuelos);
+pos('marcoTulio',      MX + 50,  Y.bisabuelos);
+pos('gracielaGaleano', MX + 200, Y.bisabuelos);
+
+// --- TÍOS ABUELOS: spread around MX, children of marcoTulio ---
+const tiosList = ['joseTulio','mariaJosefa','aurora','francined',
+                  'gracielaChela','amparo','efrain','fanny','anaTulia'];
+const tiosW = tiosList.length * (NW + HGAP) - HGAP;
+const tiosStart = MX - tiosW/2 + NW/2;
+tiosList.forEach((id, i) => pos(id, tiosStart + i*(NW+HGAP), Y.tiosAbuelos));
+
+// --- ABUELOS row ---
+// Left cluster: desconocida — libia (paternal grandparents of Valeria)
+pos('desconocida', MX - 560, Y.abuelos);
+pos('libia',       MX - 420, Y.abuelos);
+// Center: pedroSerna + mariaElena (couple, Pedro = son of Maria Serna)
+pos('pedroSerna',  MX - 40,  Y.abuelos);
+pos('mariaElena',  MX + 120, Y.abuelos);
+
+// --- TÍOS PATERNOS: below libia/desconocida ---
+pos('alex',       MX - 610, Y.padres);
+pos('yolima',     MX - 480, Y.padres);
+pos('juanCamilo', MX - 350, Y.padres);
+
+// --- PADRES row ---
+pos('otraPareja', MX - 210, Y.padres);
+pos('mauricio',   MX - 70,  Y.padres);
+pos('sandra',     MX + 80,  Y.padres);
+pos('omar',       MX + 230, Y.padres);
+
+// --- TÍOS MATERNOS: to the right, same row as padres ---
+pos('mabelCristina', MX + 390, Y.padres);
+pos('katherine',     MX + 530, Y.padres);
+pos('matthias',      MX + 530, Y.matthias);
+
+// --- HIJOS ---
+pos('alejandro', MX - 210, Y.hijos);
+pos('vanessa',   MX - 70,  Y.hijos);
+pos('valeria',   MX + 80,  Y.hijos);
+
+function pos(id, x, y) { nodes[id].x = x; nodes[id].y = y; }
+
+// ── CONNECTIONS ───────────────────────────────────────────────────
+const couples = [
+  // bisabuelos
+  ['mariaSerna',   'marcoTulio'],
+  ['marcoTulio',   'gracielaGaleano'],
+  // abuelos
+  ['desconocida',  'libia'],
+  ['pedroSerna',   'mariaElena'],
+  // padres
+  ['otraPareja',   'mauricio'],
+  ['mauricio',     'sandra'],
+  ['sandra',       'omar'],
+];
+
+// childOf[id] = [parentId, parentId]
+const childOf = {
+  // Maria Serna → Pedro Serna
+  pedroSerna:    ['mariaSerna'],
+  // Marco+Graciela → tíos abuelos (mediohermanos only from marco)
+  joseTulio:     ['marcoTulio'],
+  mariaJosefa:   ['marcoTulio'],
+  aurora:        ['marcoTulio'],
+  francined:     ['marcoTulio'],
+  // Marco+Graciela → full siblings
+  gracielaChela: ['marcoTulio','gracielaGaleano'],
+  amparo:        ['marcoTulio','gracielaGaleano'],
+  efrain:        ['marcoTulio','gracielaGaleano'],
+  fanny:         ['marcoTulio','gracielaGaleano'],
+  anaTulia:      ['marcoTulio','gracielaGaleano'],
+  // Marco+Graciela → mariaElena
+  mariaElena:    ['marcoTulio','gracielaGaleano'],
+  // desconocida+libia → tíos paternos + mauricio
+  alex:          ['desconocida','libia'],
+  yolima:        ['desconocida','libia'],
+  juanCamilo:    ['desconocida','libia'],
+  mauricio:      ['desconocida','libia'],
+  // pedro+mariaElena → sandra + tías maternas
+  sandra:        ['pedroSerna','mariaElena'],
+  mabelCristina: ['pedroSerna','mariaElena'],
+  katherine:     ['pedroSerna','mariaElena'],
+  // katherine → matthias
+  matthias:      ['katherine'],
+  // mauricio+otraPareja → medios hermanos
+  alejandro:     ['otraPareja','mauricio'],
+  vanessa:       ['otraPareja','mauricio'],
+  // mauricio+sandra → valeria
+  valeria:       ['mauricio','sandra'],
+};
+
+// ── RENDER ────────────────────────────────────────────────────────
+const SVG_W = 1480, SVG_H = 760;
+
+const svg = d3.select('#tree-container')
+  .append('svg')
+  .attr('width', SVG_W)
+  .attr('height', SVG_H)
+  .attr('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
+
+// Gradient for "you"
+const defs = svg.append('defs');
+const gr = defs.append('linearGradient').attr('id','youGrad')
+  .attr('x1','0%').attr('y1','0%').attr('x2','100%').attr('y2','100%');
+gr.append('stop').attr('offset','0%').attr('stop-color','#e91e8c');
+gr.append('stop').attr('offset','100%').attr('stop-color','#c2185b');
+
+// ── LINKS ─────────────────────────────────────────────────────────
+const linkG = svg.append('g');
+
+// Couple lines (dashed)
+couples.forEach(([a,b]) => {
+  const na = nodes[a], nb = nodes[b];
+  if (!na||!nb) return;
+  const x1 = na.x < nb.x ? na.x + NW/2 : na.x - NW/2;
+  const x2 = nb.x < na.x ? nb.x + NW/2 : nb.x - NW/2;
+  linkG.append('line')
+    .attr('x1',x1).attr('y1',na.y)
+    .attr('x2',x2).attr('y2',nb.y)
+    .attr('stroke','#c8a0b8').attr('stroke-width',1.6)
+    .attr('stroke-dasharray','5,3').attr('fill','none');
+});
+
+// Child links — orthogonal elbows
+Object.entries(childOf).forEach(([childId, parentIds]) => {
+  const child = nodes[childId];
+  if (!child) return;
+  const parents = parentIds.map(id => nodes[id]).filter(Boolean);
+  if (!parents.length) return;
+
+  const cx = child.x;
+  const cy = child.y - NH/2;
+
+  if (parents.length === 1) {
+    const p = parents[0];
+    const px = p.x, py = p.y + NH/2;
+    const midY = py + (cy - py) * 0.5;
+    linkG.append('path')
+      .attr('d', `M${px},${py} V${midY} H${cx} V${cy}`)
+      .attr('fill','none').attr('stroke','#c8a0b8').attr('stroke-width',1.6);
+  } else {
+    // Two parents: drop from each parent bottom to a shared horizontal rail, then go to child
+    const px1 = parents[0].x, py1 = parents[0].y + NH/2;
+    const px2 = parents[1].x, py2 = parents[1].y + NH/2;
+    const railY = Math.max(py1, py2) + 18;
+    const midX = (px1 + px2) / 2;
+    const halfY = railY + (cy - railY) * 0.5;
+
+    linkG.append('path')
+      .attr('d', `M${px1},${py1} V${railY}`)
+      .attr('fill','none').attr('stroke','#c8a0b8').attr('stroke-width',1.6);
+    linkG.append('path')
+      .attr('d', `M${px2},${py2} V${railY}`)
+      .attr('fill','none').attr('stroke','#c8a0b8').attr('stroke-width',1.6);
+    linkG.append('path')
+      .attr('d', `M${Math.min(px1,px2)},${railY} H${Math.max(px1,px2)}`)
+      .attr('fill','none').attr('stroke','#c8a0b8').attr('stroke-width',1.6);
+    linkG.append('path')
+      .attr('d', `M${midX},${railY} V${halfY} H${cx} V${cy}`)
+      .attr('fill','none').attr('stroke','#c8a0b8').attr('stroke-width',1.6);
+  }
+});
+
+// ── NODES ─────────────────────────────────────────────────────────
+const nodeG = svg.append('g');
+
+Object.values(nodes).forEach(n => {
+  const g = nodeG.append('g')
+    .attr('transform', `translate(${n.x - NW/2},${n.y - NH/2})`);
+
+  // Pick fill/stroke
+  let fill, stroke, textColor, roleColor;
+  if (n.you) {
+    fill='url(#youGrad)'; stroke='#8b0057'; textColor='#fff'; roleColor='#ffd6ec';
+  } else if (n.sex==='f' && n.deceased) {
+    fill='#f0d0dd'; stroke='#c9a0b4'; textColor='#8a4a62'; roleColor='#a07080';
+  } else if (n.sex==='m' && n.deceased) {
+    fill='#d8e8f5'; stroke='#a3bdd4'; textColor='#4a6a88'; roleColor='#6080a0';
+  } else if (n.sex==='f') {
+    fill='#fce4ec'; stroke='#e57fa0'; textColor='#6b1a35'; roleColor='#9b4060';
+  } else if (n.sex==='m') {
+    fill='#e3f2fd'; stroke='#7ab3d8'; textColor='#1a3a5c'; roleColor='#2a5a8c';
+  } else {
+    fill='#efefef'; stroke='#bbb'; textColor='#777'; roleColor='#999';
+  }
+
+  const opacity = (n.deceased||n.sex==='?') ? 0.72 : 1;
+
+  g.append('rect')
+    .attr('width', NW).attr('height', NH)
+    .attr('rx', NR).attr('ry', NR)
+    .attr('fill', fill).attr('stroke', stroke)
+    .attr('stroke-width', n.you ? 2.5 : 2)
+    .attr('opacity', opacity);
+
+  const nameLines = n.name.split('\n');
+  const roleLines = (n.role||'').split('\n').filter(r=>r);
+  const totalLines = nameLines.length + roleLines.length;
+  // Vertically center all text in the node
+  const lineH = 11, roleH = 10;
+  const blockH = nameLines.length * lineH + (roleLines.length ? roleLines.length * roleH + 2 : 0);
+  let startY = (NH - blockH) / 2 + lineH;
+
+  if (n.you) startY += 1; // slight nudge down for ✨ emoji
+
+  nameLines.forEach((line, i) => {
+    const txt = (n.you && i===0) ? '✨ ' + line : line;
+    g.append('text')
+      .attr('x', NW/2).attr('y', startY + i * lineH)
+      .attr('text-anchor','middle')
+      .attr('font-size', n.you ? '10.5px' : '10px')
+      .attr('font-weight','700')
+      .attr('fill', textColor)
+      .text(txt);
+  });
+
+  const roleStartY = startY + nameLines.length * lineH + 2;
+  roleLines.forEach((line, i) => {
+    g.append('text')
+      .attr('x', NW/2).attr('y', roleStartY + i * roleH)
+      .attr('text-anchor','middle')
+      .attr('font-size','8.5px')
+      .attr('fill', roleColor)
+      .text(line);
+  });
+});
+
+// ── SECTION LABELS (with white pill background) ───────────────────
+const sectionLabels = [
+  { text:'BISABUELOS',              x: 14, y: Y.bisabuelos  },
+  { text:'TÍOS ABUELOS',           x: 14, y: Y.tiosAbuelos },
+  { text:'ABUELOS',                x: 14, y: Y.abuelos      },
+  { text:'PADRES / TÍOS',          x: 14, y: Y.padres       },
+  { text:'TÚ Y HERMANOS',          x: 14, y: Y.hijos        },
+];
+
+const labelG = svg.append('g');
+sectionLabels.forEach(l => {
+  const textEl = labelG.append('text')
+    .attr('x', l.x + 6).attr('y', l.y - NH/2 - 6)
+    .attr('font-size','8.5px').attr('font-weight','700')
+    .attr('fill','#b06080').attr('letter-spacing','0.09em')
+    .attr('font-family','Segoe UI,system-ui,sans-serif')
+    .text(l.text);
+
+  // Draw pill background behind it
+  const bbox = { w: l.text.length * 6.2 + 12, h: 14 };
+  labelG.insert('rect','text')
+    .attr('x', l.x).attr('y', l.y - NH/2 - 18)
+    .attr('width', bbox.w).attr('height', bbox.h)
+    .attr('rx', 4).attr('fill','#fdf6f0').attr('stroke','#e8c0d0')
+    .attr('stroke-width', 1);
+});
+</script>
+</body>
+</html>
