@@ -246,11 +246,14 @@ Object.entries(childOf).forEach(([childId, parentIds]) => {
     const px = p.x, py = p.y + NH/2;
 
     // Ruta especial: María Serna → Pedro Serna.
-    // Sube/avanza por arriba para no cruzarse con las líneas de los hermanos Arbeláez.
+    // Va por un carril lateral izquierdo para no cruzarse con la línea de los hermanos Arbeláez.
     if (childId === 'pedroSerna') {
-      const midY = 135;
+      const laneX = child.x - 520;
+      const upperY = py + 28;
+      const lowerY = cy - 24;
+
       linkG.append('path')
-        .attr('d', `M${px},${py} V${midY} H${cx} V${cy}`)
+        .attr('d', `M${px},${py} V${upperY} H${laneX} V${lowerY} H${cx} V${cy}`)
         .attr('fill','none')
         .attr('stroke','#c8a0b8')
         .attr('stroke-width',1.6);
