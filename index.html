@@ -25,7 +25,7 @@
   <div class="legend-item"><div class="legend-dot" style="background:#e3f2fd;border-color:#7ab3d8"></div>Hombre</div>
   <div class="legend-item"><div class="legend-dot" style="background:#f0d0dd;border-color:#c9a0b4;opacity:0.7"></div>Fallecida</div>
   <div class="legend-item"><div class="legend-dot" style="background:#d8e8f5;border-color:#a3bdd4;opacity:0.7"></div>Fallecido</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#efefef;border-color:#bbb;opacity:0.65"></div>Desconocido/o</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#efefef;border-color:#bbb;opacity:0.65"></div>Desconocida/o</div>
   <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#f48fb1,#f06292);border-color:#c2185b"></div> Yo ✨</div>
   <div class="legend-item">
     <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" stroke="#c8a0b8" stroke-width="1.8"/></svg>Descendencia
@@ -36,7 +36,8 @@
 </div>
 <div id="tree-container"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"<script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
 // ── LAYOUT CONFIG ─────────────────────────────────────────────────
 const NW = 126, NH = 54, NR = 9;   // node width / height / corner radius
 const HGAP = 14;                    // horizontal gap between sibling nodes
@@ -70,7 +71,7 @@ const nodes = {
   anaTulia:        { name:'Ana Tulia\nArbeláez Gal.',   role:'Tía Abuela',               sex:'f' },
 
   // ABUELOS
-  desconocido:     { name:'???',                        role:'Desconocido',              sex:'?' },
+  desconocida:     { name:'???',                        role:'Desconocida',              sex:'?' },
   libia:           { name:'Libia Margarita\nZuleta Q',  role:'Abuela Paterna †',         sex:'f', deceased:true },
   pedroSerna:      { name:'Pedro Serna',                role:'Abuelo (Abuelastro)',       sex:'m' },
   mariaElena:      { name:'Maria Elena\nArbeláez Galeano', role:'Abuela materna',        sex:'f' },
@@ -118,14 +119,14 @@ const tiosStart = MX - tiosW/2 + NW/2;
 tiosList.forEach((id, i) => pos(id, tiosStart + i*(NW+HGAP), Y.tiosAbuelos));
 
 // --- ABUELOS row ---
-// Left cluster: desconocido — libia (paternal grandparents of Valeria)
+// Left cluster: desconocida — libia (paternal grandparents of Valeria)
 pos('desconocido', MX - 560, Y.abuelos);
 pos('libia',       MX - 420, Y.abuelos);
 // Center: pedroSerna + mariaElena (couple, Pedro = son of Maria Serna)
 pos('pedroSerna',  MX - 40,  Y.abuelos);
 pos('mariaElena',  MX + 120, Y.abuelos);
 
-// --- TÍOS PATERNOS: below libia/desconocido ---
+// --- TÍOS PATERNOS: below libia/desconocida ---
 pos('alex',       MX - 610, Y.padres);
 pos('yolima',     MX - 480, Y.padres);
 pos('juanCamilo', MX - 350, Y.padres);
@@ -154,7 +155,7 @@ const couples = [
   // bisabuelos
   ['marcoTulio',   'gracielaGaleano'],
   // abuelos
-  ['desconocido',  'libia'],
+  ['desconocida',  'libia'],
   ['pedroSerna',   'mariaElena'],
   // padres
   ['otraPareja',   'mauricio'],
@@ -180,11 +181,11 @@ const childOf = {
   anaTulia:      ['marcoTulio','gracielaGaleano'],
   // Marco+Graciela → mariaElena
   mariaElena:    ['marcoTulio','gracielaGaleano'],
-  // desconocido+libia → tíos paternos + mauricio
-  alex:          ['desconocido','libia'],
-  yolima:        ['desconocido','libia'],
-  juanCamilo:    ['desconocido','libia'],
-  mauricio:      ['desconocido','libia'],
+  // desconocida+libia → tíos paternos + mauricio
+  alex:          ['desconocida','libia'],
+  yolima:        ['desconocida','libia'],
+  juanCamilo:    ['desconocida','libia'],
+  mauricio:      ['desconocida','libia'],
   // pedro+mariaElena → sandra + tías maternas
   sandra:        ['pedroSerna','mariaElena'],
   mabelCristina: ['pedroSerna','mariaElena'],
