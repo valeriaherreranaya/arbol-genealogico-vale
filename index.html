@@ -84,6 +84,7 @@ const nodes = {
   // TÍOS MATERNOS
   mabelCristina:   { name:'Mabel Cristina\nSerna Arbeláez', role:'Tía Materna',         sex:'f' },
   katherine:       { name:'Katherine\nArbeláez Galeano', role:'Tía Materna',            sex:'f' },
+  ivan:            { name:'Iván',                       role:'Expareja\n(padre de crianza)', sex:'m' },
   matthias:        { name:'Matthias\nArbeláez Galeano', role:'Primo',                   sex:'m' },
 
   // PADRES
@@ -139,6 +140,7 @@ pos('omar',       MX + 230, Y.padres);
 // --- TÍOS MATERNOS: to the right, same row as padres ---
 pos('mabelCristina', MX + 390, Y.padres);
 pos('katherine',     MX + 530, Y.padres);
+pos('ivan',       MX + 670, Y.padres);
 pos('matthias',      MX + 530, Y.matthias);
 
 // --- HIJOS ---
@@ -159,6 +161,7 @@ const couples = [
   ['otraPareja',   'mauricio'],
   ['mauricio',     'sandra'],
   ['sandra',       'omar'],
+  ['katherine', 'ivan'],
 ];
 
 // childOf[id] = [parentId, parentId]
